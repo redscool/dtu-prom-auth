@@ -1,18 +1,20 @@
 import express from "express";
+import user from "./user.js"
 import TempToken from "../model/TempToken.js";
 import TempLink from "../model/TempLink.js";
 import User from "../model/User.js";
 import Female from "../model/Female.js";
 import Male from "../model/Male.js";
-import { randomUUID, createHash } from "crypto";
+import { randomUUID } from "crypto";
 import { sendVerifyMail, sendResetPasswordMail } from "../util/mailer.js";
+import { computeSHA256, isDTUEmail } from "../util/index.js";
 import db from "../util/db.js";
 import jwt from "jsonwebtoken";
-
 import dotenv from "dotenv";
 dotenv.config();
 
 const ACCESS_TOKEN_EXPIRE_TIME = "1d";
+const SECRET_KEY = process.env.JWT_SECRET;
 
 const router = express.Router();
 
@@ -22,8 +24,32 @@ router.get("/", (_req, res) => {
   });
 });
 
+const verifyUserMiddleware = (req, res, next) => {
+  const token = req.headers.authorization;
+
+  res.locals.data = token;
+
+  jwt.verify(token, SECRET_KEY, (err, data) => {
+    if (err) {
+      return res.status(404).send("Unauthorized")
+    } else {
+      res.locals.data = data;
+      next()
+    }
+  })
+}
+
+router.use("/user", verifyUserMiddleware, user);
+
 router.post("/signup", async (req, res) => {
   const { email, password, type } = req.body;
+
+  if (!isDTUEmail(email) && type === 'M') {
+    return res.status(400).send({
+      success: false,
+      message: "Bad Request",
+    });
+  }
 
   const userCheck = await User.findOne({ email });
 
@@ -71,12 +97,6 @@ router.post("/signup", async (req, res) => {
   });
 });
 
-function computeSHA256(lines) {
-  const hash = createHash("sha256");
-  hash.write(lines);
-  return hash.digest("base64");
-}
-
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -99,11 +119,12 @@ router.post("/login", async (req, res) => {
   }
 
   const payload = {
-    id: user._id.toString(),
+    user_id: user._id.toString(),
     type: user.type,
+    regComplete: user.regComplete
   };
 
-  const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+  const accessToken = jwt.sign(payload, SECRET_KEY, {
     expiresIn: ACCESS_TOKEN_EXPIRE_TIME,
   });
 
@@ -168,11 +189,11 @@ router.post("/verify", async (req, res) => {
     })
     .then(() => {
       const payload = {
-        id: user._id.toString(),
+        user_id: user._id.toString(),
         type: user.type,
       };
 
-      const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      const accessToken = jwt.sign(payload, SECRET_KEY, {
         expiresIn: ACCESS_TOKEN_EXPIRE_TIME,
       });
 

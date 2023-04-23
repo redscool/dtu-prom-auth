@@ -15,6 +15,10 @@ const Schema = new mongoose.Schema({
         enum: ["M", "F"],
         required: true,
     },
+    regComplete: {
+        type: Boolean,
+        default: false
+    },
 })
 
 export default mongoose.model('User', Schema)
