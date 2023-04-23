@@ -22,6 +22,9 @@ const Schema = new mongoose.Schema({
   branch: {
     type: String,
   },
+  bio: {
+    type: String,
+  },
   company: {
     type: String,
   },
@@ -45,7 +48,7 @@ const Schema = new mongoose.Schema({
   },
   regComplete: {
     type: Boolean,
-    default: false
+    default: false,
   },
 });
 

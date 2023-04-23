@@ -1,5 +1,5 @@
 import express from "express";
-import user from "./user.js"
+import user from "./user.js";
 import TempToken from "../model/TempToken.js";
 import TempLink from "../model/TempLink.js";
 import User from "../model/User.js";
@@ -31,20 +31,20 @@ const verifyUserMiddleware = (req, res, next) => {
 
   jwt.verify(token, SECRET_KEY, (err, data) => {
     if (err) {
-      return res.status(404).send("Unauthorized")
+      return res.status(404).send("Unauthorized");
     } else {
       res.locals.data = data;
-      next()
+      next();
     }
-  })
-}
+  });
+};
 
 router.use("/user", verifyUserMiddleware, user);
 
 router.post("/signup", async (req, res) => {
   const { email, password, type } = req.body;
 
-  if (!isDTUEmail(email) && type === 'M') {
+  if (!isDTUEmail(email) && type === "M") {
     return res.status(400).send({
       success: false,
       message: "Bad Request",
@@ -121,7 +121,7 @@ router.post("/login", async (req, res) => {
   const payload = {
     user_id: user._id.toString(),
     type: user.type,
-    regComplete: user.regComplete
+    regComplete: user.regComplete,
   };
 
   const accessToken = jwt.sign(payload, SECRET_KEY, {
@@ -132,6 +132,7 @@ router.post("/login", async (req, res) => {
     success: true,
     message: "Logged In Successfully",
     accessToken,
+    regComplete: user.regComplete,
   });
 });
 
@@ -191,6 +192,7 @@ router.post("/verify", async (req, res) => {
       const payload = {
         user_id: user._id.toString(),
         type: user.type,
+        regComplete: false,
       };
 
       const accessToken = jwt.sign(payload, SECRET_KEY, {
