@@ -31,9 +31,9 @@ router.post("/updateProfile", async (req, res) => {
         : await Female.findOne({ userId: user_id }).select({
             _id: 1,
           })
-    )._id;
+    )?._id;
 
-    if (!user) {
+    if (!user || !profile_id) {
       return res.status(401).send({
         success: false,
         message: "Could not find the user",
@@ -80,6 +80,7 @@ router.post("/updateProfile", async (req, res) => {
         ...(image && { image }),
         ...(location && { location }),
         ...(bio && { bio }),
+        ...(interest && { interest }),
         ...(!regComplete && {
           regComplete: true,
           email,
@@ -119,9 +120,11 @@ router.post("/updateProfile", async (req, res) => {
       message: "Updated Successfully",
     });
   } catch (err) {
+    console.log(err);
     return res.status(401).send({
       success: false,
       message: "Something went wrong",
+      err,
     });
   }
 });
